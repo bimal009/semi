@@ -49,7 +49,38 @@ function DonorSearchContent() {
 
   // Get user location on component mount
   useEffect(() => {
-    getCurrentLocation();
+    let watchId: number;
+
+    if (navigator.geolocation) {
+      watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          setRecipient({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+          setLocationError('');
+        },
+        (error) => {
+          console.error('Location error:', error);
+          setLocationError('Unable to track your location. Using default location.');
+          setRecipient({ lat: 27.7172, lng: 85.3240 }); // Kathmandu fallback
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0,
+        }
+      );
+    } else {
+      setLocationError('Geolocation is not supported by your browser.');
+      setRecipient({ lat: 27.7172, lng: 85.3240 });
+    }
+
+    return () => {
+      if (watchId && navigator.geolocation.clearWatch) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    };
   }, []);
 
   // Parse URL parameters if they exist
@@ -69,28 +100,7 @@ function DonorSearchContent() {
     }
   }, [urlSearchParams]);
 
-  const getCurrentLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setRecipient({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          });
-          setLocationError('');
-        },
-        (error) => {
-          console.error('Location error:', error);
-          setLocationError('Unable to get your location. Using default location.');
-          // Fallback to Kathmandu, Nepal
-          setRecipient({ lat: 27.7172, lng: 85.3240 });
-        }
-      );
-    } else {
-      setLocationError('Geolocation is not supported by this browser.');
-      setRecipient({ lat: 27.7172, lng: 85.3240 });
-    }
-  };
+
 
   const handleSearch = async (params: SearchParams) => {
     if (!recipient) {
