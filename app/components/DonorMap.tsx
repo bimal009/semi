@@ -1,7 +1,14 @@
 "use client";
-import React, { useEffect, useRef } from "react";
-import L from "leaflet";
+
+import React from "react";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+
+// Import the marker images as modules
+import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
 
 interface Location {
     lat: number;
@@ -9,95 +16,75 @@ interface Location {
 }
 
 interface Donor {
-    email: string;
     firstName?: string;
     lastName?: string;
     organ: string;
     bloodGroup: string;
+    location: Location | null;
     distance?: number;
-    location: Location;
 }
 
-interface DonorMapProps {
+interface MapComponentProps {
     recipient: Location | null;
     donors: Donor[];
 }
 
-const DonorMap: React.FC<DonorMapProps> = ({ recipient, donors }) => {
-    const mapRef = useRef<L.Map | null>(null);
-    const markersRef = useRef<L.LayerGroup | null>(null);
+// Fix marker icon path issue by assigning imported URLs
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+    iconRetinaUrl: markerIcon2x,
+    iconUrl: markerIcon,
+    shadowUrl: markerShadow,
+});
 
-    useEffect(() => {
-        if (!recipient) return;
-
-        // Initialize map once
-        if (!mapRef.current) {
-            mapRef.current = L.map("donor-map").setView([recipient.lat, recipient.lng], 9);
-
-            L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-                attribution: "&copy; OpenStreetMap contributors",
-            }).addTo(mapRef.current);
-
-            markersRef.current = L.layerGroup().addTo(mapRef.current);
-        } else {
-            // Just pan to new recipient location if map exists
-            mapRef.current.setView([recipient.lat, recipient.lng], 9);
-        }
-
-        // Clear previous markers
-        markersRef.current?.clearLayers();
-
-        // Add recipient marker
-        const recipientIcon = L.divIcon({
-            className: "custom-div-icon",
-            html: `<div style="background-color: #ef4444; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>`,
-            iconSize: [12, 12],
-            iconAnchor: [6, 6],
-        });
-
-        L.marker([recipient.lat, recipient.lng], { icon: recipientIcon })
-            .addTo(markersRef.current!)
-            .bindPopup("Your Location")
-            .openPopup();
-
-        // Add donor markers
-        const donorIcon = L.divIcon({
-            className: "custom-div-icon",
-            html: `<div style="background-color: #22c55e; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>`,
-            iconSize: [12, 12],
-            iconAnchor: [6, 6],
-        });
-
-        donors.forEach((donor) => {
-            L.marker([donor.location.lat, donor.location.lng], { icon: donorIcon })
-                .addTo(markersRef.current!)
-                .bindPopup(
-                    `<div class="p-2">
-            <h3 class="font-bold">${donor.firstName ?? ""} ${donor.lastName ?? ""}</h3>
-            <p>Organ: ${donor.organ}</p>
-            <p>Blood Group: ${donor.bloodGroup}</p>
-            <p>Distance: ${donor.distance?.toFixed(2) ?? "N/A"} km</p>
-          </div>`
-                );
-        });
-
-        return () => {
-            // On unmount, remove map to cleanup
-            if (mapRef.current) {
-                mapRef.current.remove();
-                mapRef.current = null;
-                markersRef.current = null;
-            }
-        };
-    }, [recipient, donors]);
+const MapComponent: React.FC<MapComponentProps> = ({ recipient, donors }) => {
+    const center = recipient || { lat: 27.7172, lng: 85.3240 };
 
     return (
-        <div
-            id="donor-map"
-            style={{ height: "500px" }}
-            className="rounded-2xl shadow-lg border border-gray-100 bg-white"
-        />
+        <div className="w-full h-[400px] rounded-2xl overflow-hidden shadow">
+            <MapContainer
+                center={center}
+                zoom={10}
+                scrollWheelZoom={true}
+                style={{ height: "100%", width: "100%" }}
+            >
+                <TileLayer
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution="&copy; OpenStreetMap contributors"
+                />
+
+                {/* Recipient Marker */}
+                {recipient && (
+                    <Marker position={recipient}>
+                        <Popup>
+                            <strong>Recipient</strong>
+                            <br />
+                            You are here
+                        </Popup>
+                    </Marker>
+                )}
+
+                {/* Donor Markers */}
+                {donors.map((donor, idx) =>
+                    donor.location ? (
+                        <Marker key={idx} position={donor.location}>
+                            <Popup>
+                                <strong>
+                                    {donor.firstName} {donor.lastName}
+                                </strong>
+                                <br />
+                                Organ: {donor.organ}
+                                <br />
+                                Blood Group: {donor.bloodGroup}
+                                <br />
+                                Distance: {donor.distance?.toFixed(2)} km
+                            </Popup>
+                        </Marker>
+                    ) : null
+                )}
+            </MapContainer>
+        </div>
     );
 };
 
-export default DonorMap;
+export default MapComponent;

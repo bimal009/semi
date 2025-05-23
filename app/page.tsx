@@ -10,7 +10,8 @@ import LoadingSpinner from './components/LoadingSpinner';
 import AIResponse from './components/AiResponse';
 import DonorList from './components/DonorList';
 import EmptyState from './components/EmptyState';
-
+import dynamic from "next/dynamic";
+const MapComponent = dynamic(() => import('./components/DonorMap'), { ssr: false });
 interface Location {
   lat: number;
   lng: number;
@@ -49,38 +50,26 @@ function DonorSearchContent() {
 
   // Get user location on component mount
   useEffect(() => {
-    let watchId: number;
-
-    if (navigator.geolocation) {
-      watchId = navigator.geolocation.watchPosition(
-        (position) => {
-          setRecipient({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          });
-          setLocationError('');
-        },
-        (error) => {
-          console.error('Location error:', error);
-          setLocationError('Unable to track your location. Using default location.');
-          setRecipient({ lat: 27.7172, lng: 85.3240 }); // Kathmandu fallback
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0,
-        }
-      );
-    } else {
-      setLocationError('Geolocation is not supported by your browser.');
-      setRecipient({ lat: 27.7172, lng: 85.3240 });
-    }
-
-    return () => {
-      if (watchId && navigator.geolocation.clearWatch) {
-        navigator.geolocation.clearWatch(watchId);
+    const location = navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setRecipient({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+        setLocationError('');
+      },
+      (error) => {
+        console.error('Location error:', error);
+        setLocationError('Unable to detect your location. Using default location.');
+        setRecipient({ lat: 27.7172, lng: 85.3240 }); // fallback
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
       }
-    };
+    );
+
   }, []);
 
   // Parse URL parameters if they exist
@@ -248,6 +237,8 @@ function DonorSearchContent() {
             </p>
           </div>
         )}
+        <MapComponent recipient={recipient} donors={donors} />
+
 
         {/* Results */}
         {!loading && donors.length > 0 && (

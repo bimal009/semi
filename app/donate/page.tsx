@@ -22,7 +22,6 @@ export default function DonorFormPage() {
         formState: { errors, isSubmitting },
         reset,
     } = useForm<FormData>();
-
     const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
     const organs = ["Kidney", "Liver", "Heart", "Lung", "Pancreas", "Intestine"];
 
