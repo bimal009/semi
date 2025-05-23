@@ -29,6 +29,18 @@ interface MapComponentProps {
     donors: Donor[];
 }
 
+
+const svgIcon = L.divIcon({
+    className: "custom-svg-icon",
+    html: `<svg xmlns="http://www.w3.org/2000/svg" width="25" height="41" viewBox="0 0 25 41" fill="none">
+          <path d="M12.5 0C5.6 0 0 5.6 0 12.5 0 23.9 12.5 41 12.5 41S25 23.9 25 12.5C25 5.6 19.4 0 12.5 0z" fill="#2C7A7B"/>
+          <circle cx="12.5" cy="12.5" r="6.25" fill="white"/>
+         </svg>`,
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+});
+
 // Fix marker icon path issue by assigning imported URLs
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -53,9 +65,9 @@ const MapComponent: React.FC<MapComponentProps> = ({ recipient, donors }) => {
                     attribution="&copy; OpenStreetMap contributors"
                 />
 
-                {/* Recipient Marker */}
+                {/* Recipient Marker with SVG icon */}
                 {recipient && (
-                    <Marker position={recipient}>
+                    <Marker position={recipient} icon={svgIcon}>
                         <Popup>
                             <strong>Recipient</strong>
                             <br />
@@ -64,7 +76,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ recipient, donors }) => {
                     </Marker>
                 )}
 
-                {/* Donor Markers */}
+                {/* Donor Markers with default icon */}
                 {donors.map((donor, idx) =>
                     donor.location ? (
                         <Marker key={idx} position={donor.location}>
@@ -87,4 +99,4 @@ const MapComponent: React.FC<MapComponentProps> = ({ recipient, donors }) => {
     );
 };
 
-export default MapComponent;
+export default MapComponent
