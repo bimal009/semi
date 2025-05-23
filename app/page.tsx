@@ -237,7 +237,7 @@ function DonorSearchContent() {
             </p>
           </div>
         )}
-        <MapComponent recipient={recipient} donors={donors} />
+
 
 
         {/* Results */}
@@ -275,6 +275,8 @@ function DonorSearchContent() {
               </div>
             )}
 
+
+
             {/* Donor List */}
             <div className="bg-white rounded-2xl shadow-lg border border-gray-100">
               <div className="p-6 border-b border-gray-100">
@@ -290,6 +292,17 @@ function DonorSearchContent() {
             </div>
           </div>
         )}
+
+        {/* Show Map only when data is ready */}
+        {recipient && donors.length > 0 && (
+          <div className="mt-12">
+            <h2 className="text-2xl font-semibold text-gray-800 text-center mb-4">
+              Donor Locations on Map
+            </h2>
+            <MapComponent recipient={recipient} donors={donors} />
+          </div>
+        )}
+
 
         {/* Empty State */}
         {!loading && donors.length === 0 && searchParams && (
