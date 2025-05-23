@@ -1,7 +1,6 @@
-
 "use client";
-import React, { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { calculateDistances } from '@/lib/calculateDistances';
 import { generatePrompt } from '@/lib/generatePrompt';
 import { getUsers } from './components/api/data.actions';
@@ -17,17 +16,19 @@ interface Location {
   lng: number;
 }
 
-interface Donor {
-  clerkId?: string;
+interface User {
   firstName?: string;
   lastName?: string;
   organ: string;
   bloodGroup: string;
-  distance?: number;
   location: Location;
   phone?: string;
   email?: string;
   role: 'donor' | 'recipient';
+}
+
+interface Donor extends User {
+  distance?: number;
 }
 
 interface SearchParams {
@@ -36,7 +37,7 @@ interface SearchParams {
   urgency: number;
 }
 
-export default function DonorSearchPage() {
+function DonorSearchContent() {
   const [donors, setDonors] = useState<Donor[]>([]);
   const [recipient, setRecipient] = useState<Location | null>(null);
   const [loading, setLoading] = useState(false);
@@ -44,7 +45,6 @@ export default function DonorSearchPage() {
   const [searchParams, setSearchParams] = useState<SearchParams | null>(null);
   const [locationError, setLocationError] = useState('');
 
-  const router = useRouter();
   const urlSearchParams = useSearchParams();
 
   // Get user location on component mount
@@ -117,7 +117,7 @@ export default function DonorSearchPage() {
       }
 
       // Filter donors based on search criteria
-      const matchingDonors = allUsers.filter((user: any) =>
+      const matchingDonors = allUsers.filter((user: User) =>
         user.role === 'donor' &&
         user.organ.toLowerCase() === params.organ.toLowerCase() &&
         user.bloodGroup === params.bloodGroup
@@ -131,14 +131,20 @@ export default function DonorSearchPage() {
 
       // Calculate distances and sort by proximity
       const donorsWithDistance = await calculateDistances(recipient, matchingDonors);
-      const sortedDonors = donorsWithDistance.sort((a, b) => (a.distance || 0) - (b.distance || 0));
+      const sortedDonors = donorsWithDistance.map(donor => ({
+        ...donor,
+        organ: params.organ,
+        bloodGroup: params.bloodGroup,
+        role: 'donor' as const,
+        distance: donor.distance
+      })).sort((a, b) => (a.distance || 0) - (b.distance || 0));
 
       setDonors(sortedDonors);
 
       // Generate AI analysis
       const aiAnalysis = await generatePrompt(
         { ...recipient, ...params },
-        sortedDonors.slice(0, 5) // Top 5 donors for analysis
+        sortedDonors.slice(0, 5)
       );
 
       setAiResponse(aiAnalysis);
@@ -279,7 +285,6 @@ export default function DonorSearchPage() {
               <DonorList
                 donors={donors}
                 onContactDonor={handleContactDonor}
-                recipient={recipient}
               />
             </div>
           </div>
@@ -291,18 +296,24 @@ export default function DonorSearchPage() {
             <EmptyState
               title="No Donors Found"
               description={`No compatible donors found for ${searchParams.organ} with blood group ${searchParams.bloodGroup} in your area.`}
-              actionText="Try Different Search"
-              onAction={() => {
-                setSearchParams(null);
-                setDonors([]);
-                setAiResponse('');
-                // Clear URL parameters
-                const url = new URL(window.location.href);
-                url.searchParams.delete('organ');
-                url.searchParams.delete('bloodGroup');
-                url.searchParams.delete('urgency');
-                window.history.replaceState({}, '', url.toString());
-              }}
+              actionButton={
+                <button
+                  onClick={() => {
+                    setSearchParams(null);
+                    setDonors([]);
+                    setAiResponse('');
+                    // Clear URL parameters
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('organ');
+                    url.searchParams.delete('bloodGroup');
+                    url.searchParams.delete('urgency');
+                    window.history.replaceState({}, '', url.toString());
+                  }}
+                  className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg transition-colors duration-200"
+                >
+                  Try Different Search
+                </button>
+              }
             />
           </div>
         )}
@@ -364,5 +375,13 @@ export default function DonorSearchPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function DonorSearchPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner size="lg" />}>
+      <DonorSearchContent />
+    </Suspense>
   );
 }

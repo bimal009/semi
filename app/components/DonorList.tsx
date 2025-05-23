@@ -3,8 +3,12 @@ import React, { useState } from 'react';
 import { User } from 'lucide-react';
 import DonorCard from './DonorCard';
 
+interface Location {
+    lat: number;
+    lng: number;
+}
+
 interface Donor {
-    clerkId?: string;
     firstName?: string;
     lastName?: string;
     organ: string;
@@ -12,6 +16,8 @@ interface Donor {
     distance?: number;
     phone?: string;
     email?: string;
+    location: Location;
+    role: 'donor' | 'recipient';
 }
 
 interface DonorListProps {
@@ -30,7 +36,6 @@ export default function DonorList({ donors, onContactDonor }: DonorListProps) {
         if (onContactDonor) {
             onContactDonor(donor, type);
         } else {
-            // Default behavior
             if (type === 'phone' && donor.phone) {
                 window.open(`tel:${donor.phone}`);
             } else if (type === 'email' && donor.email) {
@@ -39,6 +44,15 @@ export default function DonorList({ donors, onContactDonor }: DonorListProps) {
                 alert(`Contact information not available for ${type}`);
             }
         }
+    };
+
+    const isSameDonor = (a: Donor, b: Donor) => {
+        return (
+            a.firstName === b.firstName &&
+            a.lastName === b.lastName &&
+            a.organ === b.organ &&
+            a.bloodGroup === b.bloodGroup
+        );
     };
 
     return (
@@ -60,11 +74,11 @@ export default function DonorList({ donors, onContactDonor }: DonorListProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {donors.slice(0, 5).map((donor, index) => (
                     <DonorCard
-                        key={donor.clerkId ?? index}
+                        key={index}
                         donor={donor}
                         rank={index + 1}
-                        isSelected={selectedDonor?.clerkId === donor.clerkId}
-                        onSelect={setSelectedDonor}
+                        isSelected={selectedDonor ? isSameDonor(donor, selectedDonor) : false}
+                        onSelect={(donor) => setSelectedDonor(donor)}
                         onContact={handleContact}
                     />
                 ))}

@@ -1,8 +1,12 @@
 "use client";
 import { Heart, MapPin, User, Droplets, Phone, Mail, Star, CheckCircle } from 'lucide-react';
 
+interface Location {
+    lat: number;
+    lng: number;
+}
+
 interface Donor {
-    clerkId: string;
     firstName?: string;
     lastName?: string;
     organ: string;
@@ -10,6 +14,8 @@ interface Donor {
     distance?: number;
     phone?: string;
     email?: string;
+    location: Location;
+    role: 'donor' | 'recipient';
 }
 
 interface DonorCardProps {

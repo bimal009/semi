@@ -50,7 +50,9 @@ export default function MapView({
                 );
         });
 
-        return () => map.remove();
+        return () => {
+            map.remove();
+        };
     }, [recipient, donors]);
 
     return <div id="map" style={{ height: "400px", width: "100%" }} className="rounded shadow" />;
